@@ -1,5 +1,13 @@
-THis is data taken January 2021 with the 40% APA at BNL using
+github:dladams/dunean-apa40
+
+David Adams
+June 2021
+
+This is data taken January 2021 with the 40% APA at BNL using
 the 3-ASIC FEMBs later used in Iceberg 5.
+
+Thanks to Shanshan Gao for providing the data, original script to
+convert the data to hd5, and python channel mapping.
 
 Post DQM plots.
 > ./proc dqm 1010 200000
