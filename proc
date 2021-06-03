@@ -1,0 +1,99 @@
+#!/bin/sh
+#
+# proc
+#
+# David Adams
+# May 2021
+#
+# Run proc.py to process data from BNL 4% APA.
+
+PROC=${1:-help}
+RUN=$2
+MAXSAM=
+DBG=
+RETRY=
+ERASE=
+for ARG in ${*:3}; do
+  if [ $ARG = retry ]; then
+    RETRY=true
+  elif [ $ARG = erase ]; then
+    ERASE=true
+  elif [ -z "$MAXSAM" ]; then
+    MAXSAM=$ARG
+  elif [ -z "$DBG" ]; then
+    DBG=$ARG
+  else
+    echo Unexpected argument: $ARG
+    exit 1
+  fi
+done
+if [ -z "$MAXSAM" ]; then
+  MAXSAM=100000
+fi
+if [ -z "$RUN" -o "$PROC" = help ]; then
+  echo Usage: $0: PROC RUN [MAXSAM] [DBG]
+  echo "  which creates procrun/PROC/runRUN/maxsamMAXSAM and runs"
+  python -u proc.py help
+  exit 0
+fi
+FRUN=$RUN
+while [ ${#FRUN} -lt 6 ]; do FRUN=0$FRUN; done
+RUNDIR=procrun/$PROC/run$FRUN/maxsam$MAXSAM
+if [ -n "$RETRY$ERASE" ]; then
+  rm -rf $RUNDIR
+  if [ -n "$ERASE" ]; then exit 0; fi
+fi
+
+# Check if RUN is a number.
+if [ $RUN -eq $RUN ] 2>/dev/null; then
+  echo Processing run $RUN
+else
+  echo RUN must be a number
+  exit 2
+fi
+
+# Check if there is a file for RUN.
+if [ -z $(python runfiles.py $RUN) ]; then
+  echo Run not found: $RUN
+  exit 3
+fi
+
+THISDIR=$(pwd)
+if [ -r $RUNDIR ]; then
+  echo Keeping existing run dir: $RUNDIR
+  exit 1
+else
+  echo Processing in $RUNDIR
+ mkdir -p $RUNDIR
+ cp load.fcl $RUNDIR
+ cp *.py $RUNDIR
+ cd $RUNDIR
+ ln -s $THISDIR/job .
+ ln -s $THISDIR/localRunData .
+ if ! fcldump load.fcl 5 >load.fcldump; then
+   echo Unable to dump load.fcl
+   exit 1
+ fi
+ python -u proc.py $PROC $RUN $MAXSAM $DBG 2>&1 | tee proc.log
+ echo Finished running job in $RUNDIR
+ cd $THISDIR
+fi
+
+WWWDIR=~/wwwdune/protodune/femb/apa40/2021-01/data
+if [ -n "$FRUN" ]; then
+  if [ $PROC = dqm ]; then
+    DQPDIR=$WWWDIR/dqm/run$FRUN/
+    mkdir -p $DQPDIR
+    rm -f $DQPDIR/*
+    cp $RUNDIR/*.png $DQPDIR
+    for DIR in $DQPDIR; do
+      while [ ${#DIR} -gt 1 ]; do
+        makeIndex $DIR k
+        if [ $DIR = $WWWDIR ]; then break; fi
+        DIR=$(dirname $DIR)
+      done
+    done
+  else
+    echo Results are not published.
+  fi
+fi

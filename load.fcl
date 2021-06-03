@@ -1,0 +1,150 @@
+
+#include "load_dunenoise_iceberg.fcl"
+##include "setIceberg5a.fcl"
+#services.LArFFT: @erase
+##include "services_dune.fcl"
+##include "iceberg_dataprep_tools.fcl"
+
+#include "myconfig.fcl"
+#include "dunenoise_tools.fcl"
+
+# Default calibrations.
+tools.areaGain_g2s1: @local::tools.areaGain_apa40_202101g2s1b2lo_v03
+
+tools.sampleCalibration: {
+  tool_type: FloatArrayGainCalibration
+  LogLevel: 1
+  Unit: "ke/tick"
+  GainDefault: 0.0
+  AdcUnderflowDefault: 0
+  AdcOverflowDefault: 4095
+  GainTool: "areaGain_g2s1"
+}
+
+tools.scale1usTo2us: {
+  tool_type: AdcSampleScaler
+  LogLevel: 1
+  ScaleFactor: 0.5
+  OutputUnit: ""
+  InputUnit: ""
+}
+
+tools.adcPlotDftTickPower.YMax: 0.004
+tools.adcPlotDftTickPower.PlotName: "dftpowt_run%0RUN%_evt%0EVENT%_ch%0CHAN%.{png,tpad}"
+
+# Charge calibration signal finder.
+tools.adcCalibSignalFinderPos: {
+  BinsAfter: 10
+  BinsBefore: 2
+  FlagNegative: "false"
+  FlagPositive: "true"
+  LogLevel: 1
+  Threshold: 100
+  tool_type: "AdcThresholdSignalFinder"
+}
+
+tools.channelRanges: {
+  tool_type: FclIndexRangeTool
+  LogLevel: 1
+  all: {
+    labels: ["FEMB"]
+    begin:   0
+    end:   128
+  }
+}
+
+# Run data
+tools.localRunDataTool: {
+  FileNames: ["localRunData/rundata.fcl", "localRunData/rundata%RUN%.fcl"]
+  LogLevel: 1
+  tool_type: "FclRunDataTool"
+}
+
+# Charge calibration ROI fitter.
+data.hcsAreaRange:   "0:1000:pampg14"
+data.hcsHeightRange: "0:150:pampg14"
+data.hcsShapingRange: "0:8"
+#include "calibRoiFitter.fcl"
+tools.adcRoiFitter.RunDataTool: "localRunDataTool"
+#tools.adcRoiFitter.LogLevel: 5
+tools.adcRoiFitter.SumRootFileName: "sumHists.root"   # Savew summary histograms
+tools.adcRoiFitter.RoiPlotOpt: 2      # Draw ROIs
+tools.adcRoiFitter.MaxRoiPlots: 200      # Draw ROIs
+
+# Channel status.
+services.ChannelStatusService: {
+  service_provider: SimpleChannelStatusService
+  BadChannels: []
+  NoisyChannels: []
+}
+services.ChannelStatusService.BadChannels: [5, 20, 22, 24, 25, 27, 28, 29, 42, 64, 65, 79, 83, 123]
+services.ChannelStatusService.NoisyChannels: []
+tools.channelStatus: @local::tools.channelStatusFromService
+
+tools.tickRanges.plotTicks: { begin:0 end:1024 labels:["Plot ticks"] }
+tools.tickRanges.plotAllTicks: { begin:0 end:0 labels:["All ticks"] }
+
+tools.rawAdcPlotter.MaxSignal: 50
+tools.rawAdcPlotter.PlotFileName: "adcrawRun%0RUN%.png"
+
+# Pedestal finder.
+tools.adcPedestalFit: @local::tools.ib4_adcPedestalFit
+tools.adcPedestalFit.FitOpt: 3
+tools.adcPedestalFit.FitPrecision: 1.0
+tools.adcPedestalFit.AdcFitRange: 60
+#tools.adcPedestalFit.LogLevel: 2
+
+# Add pedestal distribution plots to the pedestal finder.
+tools.adcPedestalFitPlot: @local::tools.adcPedestalFit
+tools.adcPedestalFitPlot.PlotFileName: "pedRun%0RUN%Event%0EVENT%Chan%0CHAN%.png"
+
+#tools.ibmet_adcChannelPedestalPlotter.LogLevel: 4
+tools.adcPlotRaw.LogLevel: 4
+
+data.fembAsicLines: [16, 32, 48, 64, 80, 96, 112]
+data.fembPlaneLines: [14, 18, 32, 66, 94]
+
+tools.femb_adcChannelPedestalPlotter: @local::tools.ibmet_adcChannelPedestalPlotter
+tools.femb_adcChannelPedestalPlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalPlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalPlotter.ChannelLinePattern: @local::data.fembAsicLines
+
+tools.femb_adcChannelPedestalNoisePlotter: @local::tools.ibmet_adcChannelPedestalNoisePlotter
+tools.femb_adcChannelPedestalNoisePlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalNoisePlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalNoisePlotter.ChannelLinePattern: @local::data.fembPlaneLines
+tools.femb_adcChannelPedestalNoisePlotter.MetricMax: 6.0
+
+tools.femb_adcChannelPedestalOrfPlotter: @local::tools.ibmet_adcChannelPedestalOrfPlotter
+tools.femb_adcChannelPedestalOrfPlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalOrfPlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalOrfPlotter.ChannelLinePattern: @local::data.fembAsicLines
+
+tools.femb_adcChannelPedestalPeakBinExcessPlotter: @local::tools.ibmet_adcChannelPedestalPeakBinExcessPlotter
+tools.femb_adcChannelPedestalPeakBinExcessPlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalPeakBinExcessPlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalPeakBinExcessPlotter.ChannelLinePattern: @local::data.fembAsicLines
+
+tools.femb_adcChannelPedestalRawRmsPlotter: @local::tools.ibmet_adcChannelPedestalRawRmsPlotter
+tools.femb_adcChannelPedestalRawRmsPlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalRawRmsPlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalRawRmsPlotter.ChannelLinePattern: @local::data.fembPlaneLines
+
+tools.femb_adcChannelPedestalRawTailPlotter: @local::tools.ibmet_adcChannelPedestalRawTailPlotter
+tools.femb_adcChannelPedestalRawTailPlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalRawTailPlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalRawTailPlotter.ChannelLinePattern: @local::data.fembAsicLines
+
+tools.femb_adcChannelPedestalReducedChiSquarePlotter: @local::tools.ibmet_adcChannelPedestalReducedChiSquarePlotter
+tools.femb_adcChannelPedestalReducedChiSquarePlotter.ChannelRanges: [""]
+tools.femb_adcChannelPedestalReducedChiSquarePlotter.ChannelLineModulus: 128
+tools.femb_adcChannelPedestalReducedChiSquarePlotter.ChannelLinePattern: @local::data.fembAsicLines
+
+tools.adcPlotRaw.PlotName: "chtrawEvent%0Event%.png"
+
+# DFT power
+# Jan 2021 APA40 is still run at 2 MHz
+#tools.adcPlotDftTickPower.SampleFreq: 1953.12
+tools.adcPlotDftTickPower.NBinX: 100
+#tools.adcPlotDftTickPower.XMax: 1000
+

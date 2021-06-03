@@ -1,0 +1,7 @@
+tmp
+__pycache__
+calibData
+calibrations
+*.fcldump
+*.png
+*.tpad
