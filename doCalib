@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# doCalib
+#
+# Carry out calibration starting from ROI histograms.
+
+CALIB=$1
+VERS=$2
+OPT=${3:-run}
+if [ -z "$VERS" ]; then
+  echo Usage: $0 CALIB VERS
+  exit 0
+fi
+CALVER=${CALIB}_$VERS
+CALDIR=calibrations/$CALVER
+WWWDIR=www/calib/$CALVER
+FCLFIL=job/$CALVER.fcl
+FCLDIR=job/calib/$CALVER
+OUTS="$CALDIR $WWWDIR $FCLFIL $FCLDIR"
+
+for OUT in $OUTS; do
+  if [ $OPT = clean ]; then
+    if [ -r $OUT ]; then
+      echo Removing $OUT
+      rm -rf $OUT
+    fi
+  elif [ $OPT = check ]; then
+    if [ -r $OUT ]; then
+      echo "Present: $OUT"
+    else
+      echo " Absent: $OUT"
+    fi
+  elif [ $OPT = run ]; then
+    if [ -r $OUT ]; then
+      echo Already exists: $OUT
+      exit 1
+    fi
+  else
+    echo Invalid option: $OPT
+    exit 0
+  fi
+done
+if [ $OPT = clean ]; then
+  ./makeFclList
+fi
+if [ $OPT != run ]; then
+  exit 0
+fi
+
+# Varying only the gain.
+if [ $VERS = v01 ]; then
+  echo '{doCalib("'$CALIB'", "v01", "all", 0, 15);}' >tmp.C
+# Varying gain and offset.
+elif [ $VERS = v02 ]; then
+  echo '{doCalib("'$CALIB'", "v02", "all", 0, 15, -0.2);}' >tmp.C
+# Varying gain and pedestal.
+elif [ $VERS = v03 ]; then
+  echo '{doCalib("'$CALIB'", "v03", "all", 0, 15, 0.0, -0.1);}' >tmp.C
+else
+  echo Invalid fit option: $VERS
+  exit 1
+fi
+echo
+echo "******** Calibrating..."
+root.exe -b -q tmp.C
+if [ ! -r $CALDIR ]; then
+  echo Not found: $CALDIR
+  exit 1
+fi
+
+echo
+echo "******** Copy to web area..."
+./wcopy
+if [ ! -r $WWWDIR ]; then
+  echo Not found: $WWWDIR
+  exit 1
+fi
+
+echo
+echo "******* Building fcl..."
+makeCalibFcl $CALVER
+if [ ! -r $FCLFIL ]; then
+  echo Not found: $FCLFIL
+  exit 1
+fi
+if [ ! -r $FCLDIR ]; then
+  echo Not found: $FCLDIR
+  exit 1
+fi
+./makeFclList
+
+GAIDIR=$WWWDIR/gaindist
+GAIBAS=gaindist_$CALVER
+echo
+echo "******* Building gaindist..."
+if [ ! -r $GAIDIR ]; then
+  mkdir $GAIDIR
+fi
+echo '{drawGainDist("'$CALVER'", "", 0.0, "#bf{BNL 40% APA}", 80, 0.6, 1.0);}' >tmp.C
+root.exe -b -q tmp.C
+for SUF in png tpad; do
+  mv gaindist_$CALVER.$SUF $GAIDIR
+done
+makeIndex $GAIDIR
+makeIndex $GAIDIR/.. k
+
+echo
+echo Done

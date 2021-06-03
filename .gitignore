@@ -1,7 +1,15 @@
 tmp
 __pycache__
+obsolete
+procrun
 calibData
 calibrations
+data
+www
+*.log
 *.fcldump
 *.png
 *.tpad
+test.py
+hshift.C
+tmp.C

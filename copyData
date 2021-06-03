@@ -1,0 +1,4 @@
+RUN=$1
+MAXEVT=200000
+FRUN=$(formatInt $RUN)
+cp procrun/calib/run$FRUN/maxsam$MAXEVT/roicha.root data/apa40_202101/all/roicha${FRUN}pos.root

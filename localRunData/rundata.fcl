@@ -1,0 +1,7 @@
+cryostat: apa40
+apas: [1]
+gain: 14.0
+shaping: 2.0
+baseline: 200
+pulserSource: 0
+pulserAmplitude: 0

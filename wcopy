@@ -1,0 +1,16 @@
+WWWDIR=~/wwwdune/protodune/femb/apa40/2021-01/calib
+if [ ! -r $WWWDIR ]; then
+  mkdir $WWWDIR
+fi
+for SRCDIR in $(ls -d calibrations/*); do
+  DSTDIR=$WWWDIR/$(basename $SRCDIR)
+  if [ -r $DSTDIR ]; then
+    echo skipping $DSTDIR
+    continue;
+  fi
+  cp -r $SRCDIR $WWWDIR
+  for DIR in $(find $WWWDIR -type d | tac); do
+    makeIndex $DIR k
+  done
+  makeIndex $WWWDIR k
+done

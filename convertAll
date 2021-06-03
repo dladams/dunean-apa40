@@ -1,0 +1,29 @@
+#!/bin/sh
+
+MAXCOUNT=$1
+LOG=convertAll.log
+if [ -z "$MAXCOUNT" ]; then MAXCOUNT=999; fi
+OUTDIR=$HOME/data/dune/apa40/2021-01-05/femb1/hd5
+echo Output directory: $OUTDIR
+COUNT=0
+for INPAT in $(ls -1 APA_FEMB1_rawdata/*.bin | grep ASIC0 | sed 's/_FEMB1_ASIC0.bin//g'); do
+  OUTFILE=$OUTDIR/$(basename $INPAT).h5
+  if [ -r $OUTFILE ]; then
+    echo Found $OUTFILE
+  else
+    if [ $COUNT -lt $MAXCOUNT ]; then
+      echo >> $LOG
+      echo Converting $INPAT | tee -a $LOG
+      date >> $LOG | tee -a $LOG
+      python convert.py $INPAT $OUTDIR 2>&1 | tee -a $LOG
+      if [ ! -r $OUTFILE ]; then
+        echo Conversion failed
+        exit 1
+      fi
+      COUNT=$(($COUNT + 1))
+    else
+      echo Skipping $INPAT
+    fi
+  fi
+done
+echo Converted count: $COUNT
