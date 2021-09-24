@@ -1,0 +1,33 @@
+# apa40_202101g2s1b2lo_v03.fcl
+#
+
+tools.areaGain_apa40_202101g2s1b2lo_v03: {
+  tool_type: FclFileFloatArray
+  LogLevel: 1
+  Label: "areaGain_apa40_202101g2s1b2lo_v03"
+  DefaultValue: 0.0
+  FileNames: [
+    "calib/apa40_202101g2s1b2lo_v03/areaGain_all.fcl"
+  ]
+}
+
+tools.heightGain_apa40_202101g2s1b2lo_v03: {
+  tool_type: FclFileFloatArray
+  LogLevel: 1
+  Label: "heightGain_apa40_202101g2s1b2lo_v03"
+  DefaultValue: 0.0
+  FileNames: [
+    "calib/apa40_202101g2s1b2lo_v03/heightGain_all.fcl"
+  ]
+}
+
+tools.shapingTime_apa40_202101g2s1b2lo_v03: {
+  tool_type: FclFileFloatArray
+  LogLevel: 1
+  Label: "shapingTime_apa40_202101g2s1b2lo_v03"
+  DefaultValue: 0.0
+  FileNames: [
+    "calib/apa40_202101g2s1b2lo_v03/shapingTime_all.fcl"
+  ]
+}
+
